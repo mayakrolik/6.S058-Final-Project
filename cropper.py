@@ -15,6 +15,13 @@ class Cropper():
         self.lip_tracker = None
         pass
 
+    def extract_speaker_frame(self, video):
+        """
+        given a video returns a single frame in which the speaker is present for
+        demographic/quality assessment
+        """
+        raise NotImplementedError
+
     def cut_lipless_frames(self, video, audio):
         """
         given a video and its audio, isolate the frames that actually have
@@ -23,7 +30,7 @@ class Cropper():
 
         returns: concatenated video/audio, saves to intermediate_videos
         """
-        pass
+        raise NotImplementedError
 
     def locate_lips(self, frame):
         """
@@ -46,7 +53,7 @@ class Cropper():
         returns: cropped video + unchanged audio (since nothing new has been
         done to the audio), saves to processed_videos
         """
-        pass
+        raise NotImplementedError
 
     def create_transcript(self, audio, file_save):
         """

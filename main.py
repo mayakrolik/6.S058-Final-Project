@@ -29,4 +29,5 @@ def pipeline(playlist_url):
 
     scrape_from_playlist_url(playlist_url)
 
-    
+if __name__ == "__main__":
+    pipeline("https://www.youtube.com/playlist?list=PL4A014bThEmoxMp35yjj56U1kWy5PEoYH")

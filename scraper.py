@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 from pytubefix import YouTube, Playlist, Search
 from pytubefix.cli import on_progress
-from pytubefix.exceptions import VideoUnavailable, MaxRetriesExceeded
+# from pytubefix.exceptions import VideoUnavailable, 
 
 
 class Scraper():
@@ -23,16 +23,10 @@ class Scraper():
         pass
 
     def get_videos_from_search(self, query = 'Github Issue Best Practices'):
-        """"""
+        """
+        Returns list of Youtube urls as strings
+        """
         results = Search(query)
-
-        # for video in results.videos:
-        #     print(f'Title: {video.title}')
-        #     print(f'URL: {video.watch_url}')
-        #     print(f'Duration: {video.length} sec')
-        #     print('---')
-
-        print(type(results.videos[0]))
         return results.videos
 
     def get_all_urls_from_playlist(self, playlist_url):
@@ -56,15 +50,6 @@ class Scraper():
         else:
             pass
 
-    # def apply_to_playlist(self, playlist_url, function, *func_args):
-    #     """
-    #     given a playlist, execute a certain function to each
-    #     passed in function must take in a url as its first parameter
-    #     """
-    #     play = self.get_all_urls_from_playlist(playlist_url)
-    #     for i, video in enumerate(play):
-    #         function(video, *func_args)
-
     def scrape_video_and_audio(self, url, resolution='1080p', file_prefix = None, output_path = "raw_videos"):
         """
         Given a url, downloads both the video and audio (separate files) to
@@ -74,12 +59,6 @@ class Scraper():
         """
         try:
             yt = YouTube(url, on_progress_callback=on_progress)
-        # except (VideoUnavailable, MaxRetriesExceeded):
-        except:
-            print(f"video at {url} is unavalible, skipping :)")
-            return False
-
-        else:
             video = yt.streams.filter(resolution='1080p').first()
             audio = yt.streams.filter(only_audio=True).first()
             if video and audio:
@@ -91,6 +70,11 @@ class Scraper():
             else:
                 print(f"Either the audio or video was un scrape-able for {url}, skipping :)")
                 return False
+            
+        except Exception as e:
+            print(f"video at {url} is unavalible with error {e}, skipping :)")
+            return False
+            
 
 
 if __name__ == "__main__":
