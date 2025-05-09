@@ -1,25 +1,32 @@
-from scraper import Scraper2 as Scraper
+from scraper import Scraper
 from cropper import Cropper
 
+
+def scrape_from_playlist_url(playlist_url):
+    """
+    Handles all the scraping for you!
+    """
+
+    scrap = Scraper()
+    urls = scrap.get_all_urls_from_playlist(playlist_url)
+    
+    skipped = 0
+    i = 0
+    total_len = len(urls)
+    for url in urls:
+        sucess = scrap.scrape_video_and_audio(url, file_prefix=f"raw_{i}")
+        if not sucess:
+            skipped += 1
+        else: # increment because sucessful download
+            i += 1
+
+    print(f"Scraping complete for playlist {playlist_url}, successfully scrapped {total_len-skipped} out of {total_len} videos {(total_len-skipped)/total_len}")
 
 def pipeline(playlist_url):
     """
     Given a youtube playlist, runs the whole sha-bang
     """
 
-    scrap = Scraper()
-    crop = Cropper()
+    scrape_from_playlist_url(playlist_url)
 
-    video_urls = scrap.extract_urls_from_playlist(playlist_url)
-    num_videos = len(video_urls)
-
-    file_name = "test1"
-    for i, url in enumerate(video_urls):
-        scrap.scrape_video_and_audio(url, file_prefix=f"{file_name}_{i}")
-
-    for i in range(num_videos):
-        video = scrap.load_video(f"raw_videos/{file_name}_{i}_video.mp4")
-        audio = scrap.load_audio(f"raw_videos/{file_name}_{i}_audio.mp4")
-
-        pruned_video, pruned_audio = crop.cut_lipless_frames(video, audio)
-        crop.crop_to_lips(pruned_video)
+    
