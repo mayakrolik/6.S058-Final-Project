@@ -59,7 +59,7 @@ def detect_face(image_paths,  SAVE_DETECTED_AT, default_max_size=800,size = 300,
 
 def predidct_age_gender_race(save_prediction_at, imgs_path = 'cropped_faces/'):
     img_names = [os.path.join(imgs_path, x) for x in os.listdir(imgs_path)]
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("mps")
 
     model_fair_7 = torchvision.models.resnet34(pretrained=True)
     model_fair_7.fc = nn.Linear(model_fair_7.fc.in_features, 18)
@@ -203,10 +203,11 @@ def ensure_dir(directory):
 if __name__ == "__main__":
     #Please create a csv with one column 'img_path', contains the full paths of all images to be analyzed.
     #Also please change working directory to this file.
+    print("Start")
     parser = argparse.ArgumentParser()
     parser.add_argument('--csv', dest='input_csv', action='store',
                         help='csv file of image path where col name for image path is "img_path')
-    dlib.DLIB_USE_CUDA = True
+    dlib.DLIB_USE_CUDA = False
     print("using CUDA?: %s" % dlib.DLIB_USE_CUDA)
     args = parser.parse_args()
     SAVE_DETECTED_AT = "detected_faces"

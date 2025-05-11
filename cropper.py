@@ -10,16 +10,17 @@ from mediapipe.tasks.python import vision
 from face_detector import LandmarksDetector
 from face_detector import VideoProcess
 import os
-import whisper
+
 
 class Cropper(torch.nn.Module):
     """
     model for cropping videos to just the lips/face
     """
-    def __init__(self, detector="retinaface"):
+    def __init__(self):
         super().__init__()
         self.landmarks_detector = LandmarksDetector()
         self.video_process = VideoProcess(convert_gray=False)
+        self.device = torch.device("mps")
 
     def forward(self, data_filename):
         video = self.load_video(data_filename)
@@ -38,7 +39,7 @@ def save2vid(filename, vid, frames_per_second):
 
 if __name__ == "__main__":
     audio = "raw_videos/test_audio.mp3"
-    cropper = Cropper("video")
+    cropper = Cropper()
     post_vid = cropper("raw_videos/raw_1_video.mp4")
     save2vid("./output.mp4", post_vid, frames_per_second=30)
 
