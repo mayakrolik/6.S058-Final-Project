@@ -3,12 +3,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
-LAMBDA_1 = 0.7
-LAMBDA_2 = 0.3
+LAMBDA_1 = 0.5
+LAMBDA_2 = 0.5
 T_CS = 0.7          #coverage score threshold, can be changed
 T_MIN_SAMPLES = 10  #min. samples threshold, can be changed
 
-df = pd.read_csv("data.csv")
+df = pd.read_csv("test_outputs.csv")
 CATEGORIES = ["race", "gender", "age"]
 
 def get_entropy(proportions):
@@ -51,19 +51,19 @@ underrepresented = check_minimum_representation(df, CATEGORIES, T_MIN_SAMPLES)
 
 print(f"Coverage Score (CS): {coverage_score:.4f}")
 if coverage_score < T_CS:
-    T_CATEGORY_CS = 0.5
+    T_CATEGORY_CS = 0.7
     print("Dataset flagged for low overall coverage.")
     low_coverage_categories = {cat: score for cat, score in per_category_scores.items() if score < T_CATEGORY_CS}
     if low_coverage_categories:
-        print("Recommend collecting more samples from categories with particularly low coverage scores:")
+        print("Recommend collecting more diverse samples from categories with low coverage scores:")
         for cat, score in low_coverage_categories.items():
             print(f"  - {cat}: {score:.4f} (threshold = {T_CATEGORY_CS})")
 
 print()
 print(f"Underrepresentation: {bool(underrepresented)}")
 if underrepresented:
-    print("Recommend collecting more samples from categories with insufficient minimum samples:")
+    print("Dataset flagged for insufficient minimum samples in some categories:")
     for category, problems in underrepresented.items():
         print(f"  - {category}:")
         for subcat, count in problems:
-            print(f"    * Class {subcat} has {count} samples (threshold = {T_MIN_SAMPLES})")
+            print(f"    * Class {subcat} has only {count} samples (threshold = {T_MIN_SAMPLES})")
