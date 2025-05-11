@@ -62,8 +62,8 @@ if coverage_score < T_CS:
 print()
 print(f"Underrepresentation: {bool(underrepresented)}")
 if underrepresented:
-    print("Dataset flagged for insufficient minimum samples in some categories:")
+    print("Recommend collecting more samples from categories with insufficient minimum samples:")
     for category, problems in underrepresented.items():
         print(f"  - {category}:")
         for subcat, count in problems:
-            print(f"    * Class {subcat} has only {count} samples (threshold = {T_MIN_SAMPLES})")
+            print(f"    * Class {subcat} has {count} samples (threshold = {T_MIN_SAMPLES})")
