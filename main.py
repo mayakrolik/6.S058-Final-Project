@@ -123,7 +123,7 @@ def run_demographics_analysis(final_data_dir):
     """
     dir_path = os.path.dirname(os.path.realpath(__file__))
     to_csv = [["img_path"]]
-    for file in glob.glob(f"{final_data_dir}/clip_{i}_frame.png"):
+    for file in glob.glob(f"{final_data_dir}/clip_*_frame.png"):
         to_csv.append([f"{dir_path}/{file}"])
 
     with open("file_paths.csv", "w") as f:
@@ -141,7 +141,9 @@ def pipeline(playlist_url):
 
     # chop_up_found_files("raw_videos", "intermediate_videos")
 
-    track_lips_and_transcript("intermediate_videos", "processed_videos")
+    # track_lips_and_transcript("intermediate_videos", "processed_videos")
+
+    run_demographics_analysis("processed_videos")
 
 if __name__ == "__main__":
     pipeline("https://www.youtube.com/playlist?list=PL4A014bThEmoxMp35yjj56U1kWy5PEoYH")
