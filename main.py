@@ -3,7 +3,7 @@ from scraper import Scraper
 from cropper import Cropper, save2vid
 from moviepy import VideoFileClip
 from llm_prompting import call_chat, iterative_prompt, initial_promt
-from metric import compute_cross_category_scores
+from metric import compute_cross_category_scores, plot_heatmap
 from pydub import AudioSegment
 import pandas as pd
 import shutil
@@ -35,7 +35,7 @@ def scrape_from_playlist_url(playlist_url, output_dir = "raw_videos"):
     print(f"Scraping complete for playlist {playlist_url}, successfully scrapped {total_len-skipped} out of {total_len} videos {(total_len-skipped)/total_len}")
 
 
-def scrape_from_search_query(query, top_n = 10, output_dir = "raw_videos", seen_before = None):
+def scrape_from_search_query(query, top_n = 10, output_dir = "raw_videos", seen_before = None, indx = 0):
     """
     Handles all the scraping for you given a youtube search and a limit of videos to try
     """
@@ -53,26 +53,24 @@ def scrape_from_search_query(query, top_n = 10, output_dir = "raw_videos", seen_
             urls.add(to_consider)
     
     skipped = 0
-    i = 0
     total_len = len(urls)
     scrapped = []
     for url in urls:
-        sucess = scrap.scrape_video_and_audio(url, file_prefix=f"raw_{i}", output_path=output_dir)
+        sucess = scrap.scrape_video_and_audio(url, file_prefix=f"raw_{indx}", output_path=output_dir)
         if not sucess:
             skipped += 1
         else: # increment because sucessful download
             scrapped.append(url)
-            i += 1
+            indx += 1
 
     print(f"Scraping complete for search {query}, successfully scrapped {total_len-skipped} out of {total_len} videos {(total_len-skipped)/total_len}")
-    return urls
+    return urls, indx
 
-def chop_up_found_files(dir, save_dir, final_size = 30):
+def chop_up_found_files(dir, save_dir, final_size = 30, counter = 0):
     """
     given a directory of scrapped videos, chop up the videos into final_size
     second long clips
     """
-    counter = 0
     meta_data = []
     dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -109,9 +107,9 @@ def chop_up_found_files(dir, save_dir, final_size = 30):
         writer = csv.writer(file)
         writer.writerows(meta_data)
     
-    return meta_data
+    return meta_data, counter
 
-def track_lips_and_transcript(intermed_dir, destination_dir):
+def track_lips_and_transcript(intermed_dir, destination_dir, crop_lips = True):
     """
     get transcripts and crop to lip motion of all videos
     """
@@ -149,12 +147,13 @@ def track_lips_and_transcript(intermed_dir, destination_dir):
             file.write(transcript["text"])
 
         # crop the vid
-        try:
-            post_vid = cropper(vid_path)
-            save2vid(f"{destination_dir}/clip_{i}_lips.mp4", post_vid, frames_per_second=30)
-        except Exception as e:
-            failed_files.append(vid_path)
-            errors.append(e)
+        if crop_lips:
+            try:
+                post_vid = cropper(vid_path)
+                save2vid(f"{destination_dir}/clip_{i}_lips.mp4", post_vid, frames_per_second=30)
+            except Exception as e:
+                failed_files.append(vid_path)
+                errors.append(e)
 
         # get a single frame, arbitrarily set to the 2nd second for funzies :p
         vid = VideoFileClip(vid_path)
@@ -180,20 +179,25 @@ def run_demographics_analysis_kaggle_dat():
     
     subprocess.run(["python", "models/predict.py", "--csv", "llm_run.csv"])
 
-def run_demographics_analysis(final_data_dir, output_file_name = "output.csv"):
+def run_demographics_analysis(final_data_dir, output_file_name = "output.csv", save_data_file = "demographics.csv"):
     """
     Runs inference models to label the data for demographic characteristics
     """
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    to_csv = [["img_path"]]
-    for file in glob.glob(f"{final_data_dir}/clip_*_frame.png"):
-        to_csv.append([f"{dir_path}/{file}"])
+    # dir_path = os.path.dirname(os.path.realpath(__file__))
+    # to_csv = [["img_path"]]
+    # for file in glob.glob(f"{final_data_dir}/clip_*_frame.png"):
+    #     to_csv.append([f"{dir_path}/{file}"])
 
-    with open(output_file_name, "w") as f:
-        write = csv.writer(f)
-        write.writerows(to_csv)
+    # with open(output_file_name, "w") as f:
+    #     write = csv.writer(f)
+    #     write.writerows(to_csv)
     
-    subprocess.run(["python", "models/predict.py", "--csv", output_file_name])
+    # subprocess.run(["python", "models/predict.py", "--csv", output_file_name])
+
+    prev = pd.read_csv(save_data_file)
+    new = pd.read_csv("test_outputs.csv")
+    combo = pd.concat([prev, new], ignore_index=True)
+    combo.to_csv(save_data_file, index=False)
 
 def pipeline(playlist_url):
     """
@@ -208,7 +212,7 @@ def pipeline(playlist_url):
 
     run_demographics_analysis("processed_videos")
 
-def llm_pipeline(purpose, n_iters = 100):
+def llm_pipeline(purpose, n_iters = 5):
     """
     The whole shap-bang, but smart
     """
@@ -218,7 +222,28 @@ def llm_pipeline(purpose, n_iters = 100):
     raw_dir = "raw_llm_videos"
     intermed_dir = "intermediate_llm_videos"
     processed_dir = "processed_llm_videos"
-    csv_path = "llm_csv.csv"
+    csv_path = "demographics.csv"
+
+    AGE_LUMPING = {
+    '3-9': 'Child and Young Adult',
+    '10-19': 'Child and Young Adult',
+    '20-29': 'Child and Young Adult',
+    '30-39': 'Adult',
+    '40-49': 'Adult',
+    '50-59': 'Senior',
+    '60-69': 'Senior',
+    '70+': 'Senior'
+}
+
+    RACE_LUMPING = {
+        'White': 'White',
+        'Black': 'Black',
+        'Latino_Hispanic': 'Latino_Hispanic',
+        'East Asian': 'Asian',
+        'Southeast Asian': 'Asian',
+        'Indian': 'Asian',
+        'Middle Eastern': 'White'
+    }
 
     ALL_CATEGORIES = {
     'race_lumped': ['White', 'Black', 'Latino_Hispanic', 'Asian'],
@@ -226,14 +251,19 @@ def llm_pipeline(purpose, n_iters = 100):
     'age_group_lumped': ['Child and Young Adult', 'Adult', 'Senior']
 }
     T_LOW_COVERAGE = 0.2
+    indx = 0
+    count = 0
 
     for i in range(n_iters):
         print(f"\nBEGINNING ITERATION {i} with query: {query}")
-        visited_urls = visited_urls | (scrape_from_search_query(query, seen_before=visited_urls, output_dir="raw_llm_videos"))
-        chop_up_found_files(raw_dir, intermed_dir)
+        new_urls, indx = scrape_from_search_query(query, seen_before=visited_urls, output_dir="raw_llm_videos", indx=indx, top_n=3)
+        visited_urls = visited_urls | new_urls
+        error_msgs, count = chop_up_found_files(raw_dir, intermed_dir, counter=count)
         track_lips_and_transcript(intermed_dir, processed_dir)
-        run_demographics_analysis(processed_dir, csv_path)
+        run_demographics_analysis(processed_dir)
         df = pd.read_csv(csv_path)
+        df['age_group_lumped'] = df['age'].map(AGE_LUMPING)
+        df['race_lumped'] = df['race'].map(RACE_LUMPING)
         coverage_score, per_group_scores, low_coverage_groups = compute_cross_category_scores(df, ALL_CATEGORIES, T_LOW_COVERAGE)
 
         # select group of interest
@@ -242,10 +272,13 @@ def llm_pipeline(purpose, n_iters = 100):
         group_name = group.replace("-", " ")
         scores.append(coverage_score)
         print(f"SELECTED GROUP {group_name} with score {score}, overall score sofar is {coverage_score}")
-        query = iterative_prompt(purpose, group_name)
+        query = call_chat(iterative_prompt(purpose, group_name))
 
-    print(coverage_score)
-    return coverage_score
+        if i == n_iters - 1:
+            plot_heatmap(per_group_scores, ALL_CATEGORIES)
+
+    print(coverage_score, scores)
+    return coverage_score, scores
 
 
 if __name__ == "__main__":
@@ -400,3 +433,59 @@ Sorry, there were no faces found in '/Users/mayakrolik/code/6.S058/6.S058 Final 
     # run_demographics_analysis_kaggle_dat()
 
     llm_pipeline("recognizing lip motion in English")
+#     purpose = "recognizing lip motion in English"
+#     visited_urls = set()
+#     scores = []
+#     # query = call_chat(initial_promt(purpose))
+#     raw_dir = "raw_llm_videos"
+#     intermed_dir = "intermediate_llm_videos"
+#     processed_dir = "processed_llm_videos"
+#     csv_path = "demographics.csv"
+
+#     AGE_LUMPING = {
+#     '3-9': 'Child and Young Adult',
+#     '10-19': 'Child and Young Adult',
+#     '20-29': 'Child and Young Adult',
+#     '30-39': 'Adult',
+#     '40-49': 'Adult',
+#     '50-59': 'Senior',
+#     '60-69': 'Senior',
+#     '70+': 'Senior'
+# }
+
+#     RACE_LUMPING = {
+#         'White': 'White',
+#         'Black': 'Black',
+#         'Latino_Hispanic': 'Latino_Hispanic',
+#         'East Asian': 'Asian',
+#         'Southeast Asian': 'Asian',
+#         'Indian': 'Asian',
+#         'Middle Eastern': 'White'
+#     }
+
+#     ALL_CATEGORIES = {
+#     'race_lumped': ['White', 'Black', 'Latino_Hispanic', 'Asian'],
+#     'gender': ['Male', 'Female'],
+#     'age_group_lumped': ['Child and Young Adult', 'Adult', 'Senior']
+# }
+#     T_LOW_COVERAGE = 0.2
+#     indx = 0
+#     count = 0
+
+#     run_demographics_analysis(processed_dir)
+#     df = pd.read_csv(csv_path)
+#     df['age_group_lumped'] = df['age'].map(AGE_LUMPING)
+#     df['race_lumped'] = df['race'].map(RACE_LUMPING)
+#     coverage_score, per_group_scores, low_coverage_groups = compute_cross_category_scores(df, ALL_CATEGORIES, T_LOW_COVERAGE)
+
+#     # select group of interest
+#     sorted_low = sorted(low_coverage_groups.items(), key=lambda x: x[1])
+#     group, score = sorted_low[0]
+#     group_name = group.replace("-", " ")
+#     scores.append(coverage_score)
+#     print(f"SELECTED GROUP {group_name} with score {score}, overall score sofar is {coverage_score}")
+#     query = iterative_prompt(purpose, group_name)
+#     print(f"new query: {query}")
+
+#     plot_heatmap(per_group_scores, ALL_CATEGORIES)
+    
