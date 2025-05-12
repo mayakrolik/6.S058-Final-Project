@@ -55,7 +55,7 @@ def detect_face(image_paths,  SAVE_DETECTED_AT, default_max_size=800,size = 300,
         for idx, image in enumerate(images):
             img_name = image_path.split("/")[-1]
             path_sp = img_name.split(".")
-            face_name = os.path.join(SAVE_DETECTED_AT,  path_sp[0] + "_" + "face" + str(idx) + "." + path_sp[-1])
+            face_name = os.path.join(SAVE_DETECTED_AT,  path_sp[0] + "_" + "face" + str(idx) + "_" + str(index) + "." + path_sp[-1])
             dlib.save_image(image, face_name)
 
 def predidct_age_gender_race(save_prediction_at, imgs_path = 'cropped_faces/'):

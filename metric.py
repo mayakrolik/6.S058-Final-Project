@@ -140,25 +140,25 @@ def plot_heatmap(normalized_coeffs, all_categories):
         plt.tight_layout()
         plt.show()
 
+if __name__ == "__main__":
+    # Run Metric Computations
+    coverage_score, per_group_scores, low_coverage_groups = compute_cross_category_scores(df, ALL_CATEGORIES, T_LOW_COVERAGE)
+    underrepresented = check_minimum_representation(df, ALL_CATEGORIES, T_MIN_SAMPLES)
 
-# Run Metric Computations
-coverage_score, per_group_scores, low_coverage_groups = compute_cross_category_scores(df, ALL_CATEGORIES, T_LOW_COVERAGE)
-underrepresented = check_minimum_representation(df, ALL_CATEGORIES, T_MIN_SAMPLES)
+    print(f"Coverage Score (CS): {coverage_score:.4f}")
+    if coverage_score < T_CS:
+        print("Dataset flagged for low overall cross-category coverage.")
+        sorted_low = sorted(low_coverage_groups.items(), key=lambda x: x[1])
+        print("Low-coverage groups (particularly underrepresented):")
+        for group, score in sorted_low[:10]:
+            print(f"  - {group}: {score:.4f}")
 
-print(f"Coverage Score (CS): {coverage_score:.4f}")
-if coverage_score < T_CS:
-    print("Dataset flagged for low overall cross-category coverage.")
-    sorted_low = sorted(low_coverage_groups.items(), key=lambda x: x[1])
-    print("Low-coverage groups (particularly underrepresented):")
-    for group, score in sorted_low[:10]:
-        print(f"  - {group}: {score:.4f}")
+    print()
+    print(f"Underrepresentation based on minimum samples: {bool(underrepresented)}")
+    if underrepresented:
+        print("Dataset flagged for insufficient minimum samples in some groups:")
+        for group, count in underrepresented.items():
+            print(f"  - {group}: {count} samples (threshold = {T_MIN_SAMPLES})")
 
-print()
-print(f"Underrepresentation based on minimum samples: {bool(underrepresented)}")
-if underrepresented:
-    print("Dataset flagged for insufficient minimum samples in some groups:")
-    for group, count in underrepresented.items():
-        print(f"  - {group}: {count} samples (threshold = {T_MIN_SAMPLES})")
-
-plot_heatmap(per_group_scores, ALL_CATEGORIES)
+    plot_heatmap(per_group_scores, ALL_CATEGORIES)
 

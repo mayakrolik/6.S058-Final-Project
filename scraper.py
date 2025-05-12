@@ -27,7 +27,7 @@ class Scraper():
         Returns list of Youtube urls as strings
         """
         results = Search(query)
-        return results.videos
+        return [vid.watch_url for vid in results.videos]
 
     def get_all_urls_from_playlist(self, playlist_url):
         """
