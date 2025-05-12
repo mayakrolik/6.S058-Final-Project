@@ -2,9 +2,9 @@ import pandas as pd
 import numpy as np
 import itertools
 import matplotlib.pyplot as plt
-import seaborn as sns 
+import seaborn as sns
 
-# Parameters NEED TO CHANGE
+# Parameters - can be changed
 T_CS = 0.7           # Cross-Category Coverage Score threshold
 T_LOW_COVERAGE = 0.2 # Threshold for low normalized coefficient
 T_MIN_SAMPLES = 5    # Minimum raw count per group
@@ -32,23 +32,10 @@ RACE_LUMPING = {
     'Middle Eastern': 'White'
 }
 
-# Map and transform
-if 'age' not in df.columns:
-    raise ValueError("Input CSV missing required 'age' column.")
-if 'race' not in df.columns:
-    raise ValueError("Input CSV missing required 'race' column.")
-
 df['age_group_lumped'] = df['age'].map(AGE_LUMPING)
-if df['age_group_lumped'].isnull().any():
-    missing_values = df.loc[df['age_group_lumped'].isnull(), 'age'].unique()
-    raise ValueError(f"Unmapped age values found: {missing_values}")
 
 df['race_lumped'] = df['race'].map(RACE_LUMPING)
-if df['race_lumped'].isnull().any():
-    missing_races = df.loc[df['race_lumped'].isnull(), 'race'].unique()
-    raise ValueError(f"Unmapped race values found: {missing_races}")
 
-#Define all categories
 ALL_CATEGORIES = {
     'race_lumped': ['White', 'Black', 'Latino_Hispanic', 'Asian'],
     'gender': ['Male', 'Female'],
@@ -91,10 +78,6 @@ def check_minimum_representation(df, all_categories, t_min_samples):
     return underrepresented
 
 def plot_heatmap(normalized_coeffs, all_categories):
-    """
-    Plot heatmaps for various category pairs based on normalized coefficients.
-    """
-
     def prepare_heatmap(x_cat, y_cat):
         x_labels = all_categories[x_cat]
         y_labels = all_categories[y_cat]
@@ -105,12 +88,11 @@ def plot_heatmap(normalized_coeffs, all_categories):
         for i, y in enumerate(y_labels):
             for j, x in enumerate(x_labels):
                 key_parts = {x_cat: x, y_cat: y}
-                # Find all matching keys from the full combination keys
                 matching_keys = [k for k in normalized_coeffs if x in k and y in k]
                 if matching_keys:
                     matrix[i, j] = normalized_coeffs[matching_keys[0]]
                 else:
-                    matrix[i, j] = np.nan  # Use NaN for missing combos
+                    matrix[i, j] = np.nan
 
         return matrix, x_labels, y_labels
 
@@ -139,6 +121,7 @@ def plot_heatmap(normalized_coeffs, all_categories):
         plt.ylabel(y_cat)
         plt.tight_layout()
         plt.show()
+
 
 if __name__ == "__main__":
     # Run Metric Computations
