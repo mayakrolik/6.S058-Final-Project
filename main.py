@@ -90,7 +90,7 @@ def chop_up_found_files(dir, save_dir, final_size = 30, counter = 0):
             continue
 
 
-        for j in range(int(duration//final_size)):
+        for j in range(min(int(duration//final_size), 6)):
             clip_vid = vid.subclipped(j*final_size, (j+1)*final_size)
             clip_aud = aud[j*final_size* 1000: (j+1)*final_size* 1000]
 
@@ -179,25 +179,27 @@ def run_demographics_analysis_kaggle_dat():
     
     subprocess.run(["python", "models/predict.py", "--csv", "llm_run.csv"])
 
-def run_demographics_analysis(final_data_dir, output_file_name = "output.csv", save_data_file = "demographics.csv"):
+def run_demographics_analysis(final_data_dir, iteration_num, output_file_name = "output.csv", save_data_file = "demographics.csv"):
     """
     Runs inference models to label the data for demographic characteristics
     """
-    # dir_path = os.path.dirname(os.path.realpath(__file__))
-    # to_csv = [["img_path"]]
-    # for file in glob.glob(f"{final_data_dir}/clip_*_frame.png"):
-    #     to_csv.append([f"{dir_path}/{file}"])
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    to_csv = [["img_path"]]
+    for file in glob.glob(f"{final_data_dir}/clip_*_frame.png"):
+        to_csv.append([f"{dir_path}/{file}"])
 
-    # with open(output_file_name, "w") as f:
-    #     write = csv.writer(f)
-    #     write.writerows(to_csv)
+    with open(output_file_name, "w") as f:
+        write = csv.writer(f)
+        write.writerows(to_csv)
     
-    # subprocess.run(["python", "models/predict.py", "--csv", output_file_name])
+    subprocess.run(["python", "models/predict.py", "--csv", output_file_name])
 
     prev = pd.read_csv(save_data_file)
     new = pd.read_csv("test_outputs.csv")
     combo = pd.concat([prev, new], ignore_index=True)
-    combo.to_csv(save_data_file, index=False)
+    merged_df = combo.drop_duplicates(subset=["face_name_align"], keep='first')
+    merged_df.to_csv(save_data_file, index=False)
+    merged_df.to_csv(f"demographics_{iteration_num}.csv")
 
 def pipeline(playlist_url):
     """
@@ -212,16 +214,16 @@ def pipeline(playlist_url):
 
     run_demographics_analysis("processed_videos")
 
-def llm_pipeline(purpose, n_iters = 5):
+def llm_pipeline(purpose, n_iters = 6):
     """
     The whole shap-bang, but smart
     """
     visited_urls = set()
     scores = []
-    query = call_chat(initial_promt(purpose))
-    raw_dir = "raw_llm_videos"
-    intermed_dir = "intermediate_llm_videos"
-    processed_dir = "processed_llm_videos"
+    query = call_chat(iterative_prompt(purpose, "black senior males"))
+    raw_dir = "Attempt_3/raw_videos"
+    intermed_dir = "Attempt_3/intermediate_videos"
+    processed_dir = "Attempt_3/processed_videos"
     csv_path = "demographics.csv"
 
     AGE_LUMPING = {
@@ -256,11 +258,11 @@ def llm_pipeline(purpose, n_iters = 5):
 
     for i in range(n_iters):
         print(f"\nBEGINNING ITERATION {i} with query: {query}")
-        new_urls, indx = scrape_from_search_query(query, seen_before=visited_urls, output_dir="raw_llm_videos", indx=indx, top_n=3)
+        new_urls, indx = scrape_from_search_query(query, seen_before=visited_urls, output_dir=raw_dir, indx=indx, top_n=5)
         visited_urls = visited_urls | new_urls
         error_msgs, count = chop_up_found_files(raw_dir, intermed_dir, counter=count)
         track_lips_and_transcript(intermed_dir, processed_dir)
-        run_demographics_analysis(processed_dir)
+        run_demographics_analysis(processed_dir, i)
         df = pd.read_csv(csv_path)
         df['age_group_lumped'] = df['age'].map(AGE_LUMPING)
         df['race_lumped'] = df['race'].map(RACE_LUMPING)
@@ -432,7 +434,7 @@ Sorry, there were no faces found in '/Users/mayakrolik/code/6.S058/6.S058 Final 
     
     # run_demographics_analysis_kaggle_dat()
 
-    llm_pipeline("recognizing lip motion in English")
+    llm_pipeline("recognizing lip motion in English", n_iters=5)
 #     purpose = "recognizing lip motion in English"
 #     visited_urls = set()
 #     scores = []

@@ -21,3 +21,7 @@ Please also create an OpenAI API key and include it n llm_prompting.py
 To run the project, simply run main.py
 
 Note that this project has been created to run on Apple Sillicone, but the conversion to windows support is possible via modifying a few files (including models/predict.py and cropper.py)
+
+Our curated dataset is publicly avalible at https://www.kaggle.com/datasets/lamayonesa/vsr-automatic-dataset
+
+Please check out our final project report at [6_S058_Lip_Reading_Dataset.pdf](https://github.com/mayakrolik/6.S058-Final-Project/blob/main/6_S058_Lip_Reading_Dataset.pdf)!

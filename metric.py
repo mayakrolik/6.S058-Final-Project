@@ -9,7 +9,7 @@ T_CS = 0.7           # Cross-Category Coverage Score threshold
 T_LOW_COVERAGE = 0.2 # Threshold for low normalized coefficient
 T_MIN_SAMPLES = 5    # Minimum raw count per group
 
-df = pd.read_csv("test_outputs_large.csv")
+df = pd.read_csv("/Users/mayakrolik/code/6.S058/6.S058 Final Project/from_kaggle/test_outputs_kaggle.csv")
 
 AGE_LUMPING = {
     '3-9': 'Child and Young Adult',

@@ -26,7 +26,7 @@ def iterative_prompt(purpose, missing_cat):
     
     What search queary would you reccomend inputting into a source like YouTube to find data related to {purpose} and involving {missing_cat}? 
     
-    Feel free to be creative and name specific people or groups in your reccomendation as that will help make the youtube search more accurate. Please also ensure that your reccomendation encourages the search of real people and not animation or voice over content. Note that explicitly stating the desired data science goal might not be a good representation of how to find the desired data online as people do not explicitly label their posts pragmatically.
+    Feel free to be creative and name specific people or groups in your reccomendation as that will help make the youtube search more accurate. For example, if you are looking for a specific demographic, you can search up interviews of a famous celebrity of that demographic. Please also ensure that your reccomendation encourages the search of real people and not animation or voice over content. Note that explicitly stating the desired data science goal might not be a good representation of how to find the desired data online as people do not explicitly label their posts pragmatically.
     
     Please ONLY output the ONE reccomended search terms with NO justification of why you selected it. Thanks!"""
 
@@ -45,7 +45,7 @@ def initial_promt(purpose):
 
 if __name__ == "__main__":
     purp = "recognizing lip motion in English"
-    cat_missing = "asian females old"
+    cat_missing = "senior latina woman"
     
     prompt = iterative_prompt(purp, cat_missing)
     res = call_chat(prompt)
